@@ -58,4 +58,7 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+	<properties>
+  <github.global.server>github</github.global.server>
+</properties>
 </project>
