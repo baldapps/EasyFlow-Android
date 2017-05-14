@@ -3,7 +3,15 @@ EasyFlow-Android
 This work is just conversion of EasyFlow forked from [EasyFlow](https://github.com/carrot-garden/state_EasyFlow)
 
 EasyFlow-Android has the following:
-* implement standard Logging from Android **android.util.Log** instead of **org.slf4j.Logger**
+* Implement standard Logging from Android **android.util.Log** instead of **org.slf4j.Logger**
+* Add check whether Event has State to map to.
+
+
+For more info on EasyFlow refer to original repository : [EasyFlow](https://github.com/Beh01der/EasyFlow)
+
+
+README from source
+------------
 
 EasyFlow is a simple and lightweight Finite State Machine for Java
 
