@@ -24,7 +24,6 @@ With **EasyFlow** you can:
 * simplify design, programming and testing of complex java applications
 
 All this in less then 30kB and no run-time overhead!
-[Download EasyFlow 1.1](http://datasymphony.com.au/?wpdmact=process&did=MS5ob3RsaW5r)
 
 Here is a simple example illustrating how a state machine can be definded and implemented with **EasyFlow**
 
@@ -63,4 +62,4 @@ and start the flow
 ```java
 flow.start(new FlowContext());
 ```
-See the [complete example](https://github.com/Beh01der/EasyFlow-example-AtmEmulator/blob/master/src/au/com/ds/ef/ae/AtmEmulator/MainActivity.java)
+See the [complete example](https://github.com/baldapps/EasyFlow-Android/blob/master/easyflowdemo/src/main/java/com/apipas/android/easyflowdemo/MainActivity.java)
