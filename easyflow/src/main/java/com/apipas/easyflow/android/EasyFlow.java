@@ -56,12 +56,22 @@ public class EasyFlow {
         if (!validated) {
             prepare();
 
-            LogicValidator validator = new LogicValidator<>(startState);
+            LogicValidator validator = new LogicValidator(startState);
             validator.validate();
             validated = true;
         }
 
         return this;
+    }
+
+    public void start() throws DefinitionError {
+        validate();
+        if (this.context == null)
+            this.context = new FlowContext();
+
+        if (context.getState() == null) {
+            setCurrentState(startState, context);
+        }
     }
 
     public void start(final FlowContext context) throws DefinitionError {
@@ -92,10 +102,11 @@ public class EasyFlow {
     }
 
     public void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
-        FlowContext context = savedInstanceState.getParcelable(KEY_CONTEXT);
+        context = savedInstanceState.getParcelable(KEY_CONTEXT);
         if (context != null) {
-            StateFinder stateFinder = new StateFinder<>(startState, context.getStateId());
-            context.setState(stateFinder.find());
+            StateFinder stateFinder = new StateFinder(startState, context.getStateId());
+            State s = stateFinder.find();
+            context.setState(s);
         }
     }
 

@@ -2,7 +2,7 @@ package com.apipas.easyflow.android;
 
 
 
-public class TransitionBuilder<C extends FlowContext> {
+public class TransitionBuilder {
 
 	private Event event;
 	private State stateTo;
@@ -20,13 +20,11 @@ public class TransitionBuilder<C extends FlowContext> {
 		return stateTo;
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public TransitionBuilder transit(TransitionBuilder... transitions) {
 		for (TransitionBuilder transition : transitions) {
             transition.getEvent().addTransition(stateTo, transition.getStateTo());
 			stateTo.addEvent(transition.getEvent(), transition.getStateTo());
 		}
-		
 		return this;
 	}
 }

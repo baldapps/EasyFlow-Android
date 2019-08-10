@@ -8,11 +8,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class LogicValidator <C extends FlowContext> {
-	private State<C> startState;
-	private Set<State<C>> states;
+public class LogicValidator {
+	private State startState;
+	private Set<State> states;
 	
-	public LogicValidator(State<C> startState) {
+	public LogicValidator(State startState) {
 		this.startState = startState;
 		states = new HashSet<>();
 	}
@@ -21,7 +21,7 @@ public class LogicValidator <C extends FlowContext> {
 		validate(startState);
 	}
 	
-	private void validate(State<C> state) throws DefinitionError {
+	private void validate(State state) throws DefinitionError {
 		if (!states.contains(state)) {
 			// haven't started with this state yet
 			states.add(state);
@@ -36,8 +36,8 @@ public class LogicValidator <C extends FlowContext> {
 				}
 			}
 			
-			for (Map.Entry<Event<C>, State<C>> e : state.getTransitions().entrySet()) {
-				State<C> stateTo = e.getValue();
+			for (Map.Entry<Event, State> e : state.getTransitions().entrySet()) {
+				State stateTo = e.getValue();
 				if (state.equals(stateTo)) {
 					throw new DefinitionError("Circular Event usage: " + e.getKey());
 				}
