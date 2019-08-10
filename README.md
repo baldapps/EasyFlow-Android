@@ -5,6 +5,7 @@ This work is just conversion of EasyFlow forked from [EasyFlow](https://github.c
 EasyFlow-Android has the following:
 * Implement standard Logging from Android **android.util.Log** instead of **org.slf4j.Logger**
 * Add check whether Event has State to map to.
+* Life-cycle aware
 
 
 For more info on EasyFlow refer to original repository : [EasyFlow](https://github.com/Beh01der/EasyFlow)
@@ -34,8 +35,7 @@ This is a State diargam fragment describing a simple ATM workflow
 With **EasyFlow** we can define the above state machine like this
 
 ```java
-EasyFlow<FlowContext> flow = FlowBuilder
-
+EasyFlow flow = FlowBuilder
     .from(SHOWING_WELCOME).transit(
         onCardPresent.to(WAITING_FOR_PIN).transit(
             onPinProvided.to(...).transit(
@@ -49,15 +49,10 @@ EasyFlow<FlowContext> flow = FlowBuilder
 ```
 then all what's left to do is to implement our state handlers like so
 ```java
-SHOWING_WELCOME.whenEnter(new StateHandler<FlowContext>() {
-    @Override
-    public void call(State<FlowContext> state, final FlowContext context) throws Exception {
+SHOWING_WELCOME.whenEnter((state, context) -> {
         ...
-        btnOption1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onCardPresent.trigger(context);
-            }
+        btnOption1.setOnClickListener(v -> {
+            onCardPresent.trigger(context);
         });
         ...
     }

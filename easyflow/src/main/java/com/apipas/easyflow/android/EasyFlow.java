@@ -1,6 +1,7 @@
 package com.apipas.easyflow.android;
 
 
+import android.os.Bundle;
 import android.util.Log;
 
 import com.apipas.easyflow.android.call.ContextHandler;
@@ -8,30 +9,34 @@ import com.apipas.easyflow.android.call.DefaultErrorHandler;
 import com.apipas.easyflow.android.call.EventHandler;
 import com.apipas.easyflow.android.call.ExecutionErrorHandler;
 import com.apipas.easyflow.android.call.StateHandler;
+import com.apipas.easyflow.android.err.DefinitionError;
 import com.apipas.easyflow.android.err.ExecutionError;
 
 import java.util.concurrent.Executor;
 
+import androidx.annotation.NonNull;
 
-public class EasyFlow<C extends StatefulContext> {
+
+@SuppressWarnings({"UnusedReturnValue", "unused"})
+public class EasyFlow {
     private static final String TAG = EasyFlow.class.getSimpleName();
-    protected State<C> startState;
-    private C context;
+    protected State startState;
+    private FlowContext context;
     private Executor executor;
     private boolean validated;
 
-    private StateHandler<C> onStateEnterHandler;
-    private StateHandler<C> onStateLeaveHandler;
-    private StateHandler<C> onFinalStateHandler;
-    private EventHandler<C> onEventTriggeredHandler;
-    private ContextHandler<C> onTerminateHandler;
+    private StateHandler onStateEnterHandler;
+    private StateHandler onStateLeaveHandler;
+    private StateHandler onFinalStateHandler;
+    private EventHandler onEventTriggeredHandler;
+    private ContextHandler onTerminateHandler;
     private ExecutionErrorHandler onError;
-    private boolean trace = false;
+    private static final String KEY_CONTEXT = "easyflow.context";
 
-    protected EasyFlow(State<C> startState, TransitionBuilder<C>... transitions) {
+    protected EasyFlow(State startState, TransitionBuilder... transitions) {
         this.startState = startState;
         this.validated = false;
-        for (TransitionBuilder<C> transition : transitions) {
+        for (TransitionBuilder transition : transitions) {
             startState.addEvent(transition.getEvent(), transition.getStateTo());
         }
     }
@@ -39,7 +44,7 @@ public class EasyFlow<C extends StatefulContext> {
     private void prepare() {
         startState.setFlowRunner(this);
         if (executor == null) {
-            executor = new AsyncExecutor();
+            executor = new UiThreadExecutor();
         }
 
         if (onError == null) {
@@ -47,11 +52,11 @@ public class EasyFlow<C extends StatefulContext> {
         }
     }
 
-    public EasyFlow<C> validate() {
+    public EasyFlow validate() throws DefinitionError {
         if (!validated) {
             prepare();
 
-            LogicValidator<C> validator = new LogicValidator<C>(startState);
+            LogicValidator validator = new LogicValidator<>(startState);
             validator.validate();
             validated = true;
         }
@@ -59,7 +64,7 @@ public class EasyFlow<C extends StatefulContext> {
         return this;
     }
 
-    public void start(final C context) {
+    public void start(final FlowContext context) throws DefinitionError {
         validate();
         this.context = context;
 
@@ -68,178 +73,174 @@ public class EasyFlow<C extends StatefulContext> {
         }
     }
 
-    protected void setCurrentState(final State<C> state, final C context) {
-        execute(new Runnable() {
-            @Override
-            public void run() {
-                if (isTrace())
-                    Log.d(TAG, String.format("setting current state to %s for %s <<<", state, context));
+    protected void setCurrentState(final State state, final FlowContext context) {
+        execute(() -> {
+            if (BuildConfig.DEBUG)
+                Log.d(TAG, String.format("setting current state to %s for %s <<<", state, context));
 
-                State<C> prevState = context.getState();
-                if (prevState != null) {
-                    prevState.leave(context);
-                }
-
-                context.setState(state);
-                context.getState().enter(context);
-
-                if (isTrace())
-                    Log.d(TAG, String.format("setting current state to %s for %s >>>", state, context));
+            State prevState = context.getState();
+            if (prevState != null) {
+                prevState.leave(context);
             }
+
+            context.setState(state);
+            context.getState().enter(context);
+
+            if (BuildConfig.DEBUG)
+                Log.d(TAG, String.format("setting current state to %s for %s >>>", state, context));
         });
+    }
+
+    public void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        FlowContext context = savedInstanceState.getParcelable(KEY_CONTEXT);
+        if (context != null) {
+            StateFinder stateFinder = new StateFinder<>(startState, context.getStateId());
+            context.setState(stateFinder.find());
+        }
+    }
+
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        outState.putParcelable(KEY_CONTEXT, context);
     }
 
     protected void execute(Runnable task) {
         executor.execute(task);
     }
 
-    public C getContext() {
+    public FlowContext getContext() {
         return context;
     }
 
-    public EasyFlow<C> whenEventTriggered(EventHandler<C> onEventTriggered) {
+    public EasyFlow whenEventTriggered(EventHandler onEventTriggered) {
         this.onEventTriggeredHandler = onEventTriggered;
         return this;
     }
 
-    protected void callOnEventTriggered(Event<C> event, State<C> from, State<C> to, C context) throws Exception {
+    protected void callOnEventTriggered(Event event, State from, State to, FlowContext context) {
         if (onEventTriggeredHandler != null) {
             try {
-                if (isTrace())
+                if (BuildConfig.DEBUG)
                     Log.d(TAG, String.format("when triggered %s in %s for %s <<<", event, from, context));
 
                 onEventTriggeredHandler.call(event, from, to, context);
 
-                if (isTrace())
+                if (BuildConfig.DEBUG)
                     Log.d(TAG, String.format("when triggered %s in %s for %s >>>", event, from, context));
             } catch (Exception e) {
-                callOnError(new ExecutionError(from, event, e,
-                        "Execution Error in [EasyFlow.whenEventTriggered] handler", context));
+                callOnError(new ExecutionError(from, event, e, "Execution Error in [EasyFlow.whenEventTriggered] " +
+                        "handler", context));
             }
         }
     }
 
-    public EasyFlow<C> whenStateEnter(StateHandler<C> onStateEnter) {
+    public EasyFlow whenStateEnter(StateHandler onStateEnter) {
         this.onStateEnterHandler = onStateEnter;
         return this;
     }
 
-    protected void callOnStateEnter(final State<C> state, final C context) {
+    protected void callOnStateEnter(final State state, final FlowContext context) {
         if (onStateEnterHandler != null) {
             try {
-                if (isTrace())
+                if (BuildConfig.DEBUG)
                     Log.d(TAG, String.format("when enter state %s for %s <<<", state, context));
 
                 onStateEnterHandler.call(state, context);
 
-                if (isTrace())
+                if (BuildConfig.DEBUG)
                     Log.d(TAG, String.format("when enter state %s for %s >>>", state, context));
             } catch (Exception e) {
-                callOnError(new ExecutionError(state, null, e,
-                        "Execution Error in [EasyFlow.whenStateEnter] handler", context));
+                callOnError(new ExecutionError(state, null, e, "Execution Error in [EasyFlow.whenStateEnter] handler"
+                        , context));
             }
         }
     }
 
-    public EasyFlow<C> whenStateLeave(StateHandler<C> onStateLeave) {
+    public EasyFlow whenStateLeave(StateHandler onStateLeave) {
         this.onStateLeaveHandler = onStateLeave;
         return this;
     }
 
-    protected void callOnStateLeave(final State<C> state, final C context) {
+    protected void callOnStateLeave(final State state, final FlowContext context) {
         if (onStateLeaveHandler != null) {
             try {
-                if (isTrace())
+                if (BuildConfig.DEBUG)
                     Log.d(TAG, String.format("when leave state %s for %s <<<", state, context));
 
                 onStateLeaveHandler.call(state, context);
 
-                if (isTrace())
+                if (BuildConfig.DEBUG)
                     Log.d(TAG, String.format("when leave state %s for %s >>>", state, context));
             } catch (Exception e) {
-                callOnError(new ExecutionError(state, null, e,
-                        "Execution Error in [EasyFlow.whenStateLeave] handler", context));
+                callOnError(new ExecutionError(state, null, e, "Execution Error in [EasyFlow.whenStateLeave] handler"
+                        , context));
             }
         }
     }
 
-    public EasyFlow<C> whenFinalState(StateHandler<C> onFinalState) {
+    public EasyFlow whenFinalState(StateHandler onFinalState) {
         this.onFinalStateHandler = onFinalState;
         return this;
     }
 
-    protected void callOnFinalState(final State<C> state, final C context) {
+    protected void callOnFinalState(final State state, final FlowContext context) {
         try {
             if (onFinalStateHandler != null) {
-                if (isTrace())
+                if (BuildConfig.DEBUG)
                     Log.d(TAG, String.format("when final state %s for %s <<<", state, context));
 
                 onFinalStateHandler.call(state, context);
 
-                if (isTrace())
+                if (BuildConfig.DEBUG)
                     Log.d(TAG, String.format("when final state %s for %s >>>", state, context));
             }
 
             callOnTerminate(context);
         } catch (Exception e) {
-            callOnError(new ExecutionError(state, null, e,
-                    "Execution Error in [EasyFlow.whenFinalState] handler", context));
+            callOnError(new ExecutionError(state, null, e, "Execution Error in [EasyFlow.whenFinalState] handler",
+                    context));
         }
     }
 
-    public EasyFlow<C> whenError(ExecutionErrorHandler onError) {
+    public EasyFlow whenError(ExecutionErrorHandler onError) {
         this.onError = onError;
         return this;
     }
 
-    public EasyFlow<C> whenTerminate(ContextHandler onTerminateHandler) {
+    public EasyFlow whenTerminate(ContextHandler onTerminateHandler) {
         this.onTerminateHandler = onTerminateHandler;
         return this;
     }
 
-    public void waitForCompletion() {
-        waitForCompletion(context);
-    }
-
-    public void waitForCompletion(C context) {
+    public void waitForCompletion() throws InterruptedException {
         context.awaitTermination();
     }
 
-    public EasyFlow<C> executor(Executor executor) {
+    public EasyFlow executor(Executor executor) {
         this.executor = executor;
         return this;
-    }
-
-    public EasyFlow<C> trace() {
-        trace = true;
-        return this;
-    }
-
-    protected boolean isTrace() {
-        return trace;
     }
 
     protected void callOnError(final ExecutionError error) {
         if (onError != null) {
             onError.call(error);
         }
-        callOnTerminate((C) error.getContext());
+        callOnTerminate(error.getContext());
     }
 
-    protected void callOnTerminate(final C context) {
+    protected void callOnTerminate(final FlowContext context) {
         if (!context.isTerminated()) {
             try {
-                if (isTrace())
+                if (BuildConfig.DEBUG)
                     Log.d(TAG, String.format("terminating context %s", context));
 
                 context.setTerminated();
                 if (onTerminateHandler != null) {
-                    if (isTrace())
+                    if (BuildConfig.DEBUG)
                         Log.d(TAG, String.format("when terminate for %s <<<", context));
 
                     onTerminateHandler.call(context);
 
-                    if (isTrace())
+                    if (BuildConfig.DEBUG)
                         Log.d(TAG, String.format("when terminate for %s >>>", context));
                 }
             } catch (Exception e) {

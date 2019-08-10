@@ -2,16 +2,16 @@ package com.apipas.easyflow.android.err;
 
 import com.apipas.easyflow.android.Event;
 import com.apipas.easyflow.android.State;
-import com.apipas.easyflow.android.StatefulContext;
+import com.apipas.easyflow.android.FlowContext;
 
 @SuppressWarnings("rawtypes")
 public class ExecutionError extends Exception {
 	private static final long serialVersionUID = 4362053831847081229L;
 	private State state;
 	private Event event;
-	private StatefulContext context;
+	private FlowContext context;
 	
-	public ExecutionError(State state, Event event, Exception error, String message, StatefulContext context) {
+	public ExecutionError(State state, Event event, Exception error, String message, FlowContext context) {
 		super(message, error);
 		
 		this.state = state;
@@ -27,7 +27,7 @@ public class ExecutionError extends Exception {
 		return event;
 	}
 
-	public StatefulContext getContext() {
+	public FlowContext getContext() {
 		return context;
 	}
 }

@@ -2,27 +2,27 @@ package com.apipas.easyflow.android;
 
 
 
-public class TransitionBuilder<C extends StatefulContext> {
+public class TransitionBuilder<C extends FlowContext> {
 
-	private Event<C> event;
-	private State<C> stateTo;
+	private Event event;
+	private State stateTo;
 	
-	protected TransitionBuilder(Event<C> event, State<C> stateTo) {
+	protected TransitionBuilder(Event event, State stateTo) {
 		this.event = event;
 		this.stateTo = stateTo;
 	}
 	
-	protected Event<C> getEvent() {
+	protected Event getEvent() {
 		return event;
 	}
 
-	protected State<C> getStateTo() {
+	protected State getStateTo() {
 		return stateTo;
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public TransitionBuilder transit(TransitionBuilder... transitions) {
-		for (TransitionBuilder<C> transition : transitions) {
+		for (TransitionBuilder transition : transitions) {
             transition.getEvent().addTransition(stateTo, transition.getStateTo());
 			stateTo.addEvent(transition.getEvent(), transition.getStateTo());
 		}

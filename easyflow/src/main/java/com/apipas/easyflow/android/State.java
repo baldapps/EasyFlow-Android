@@ -8,40 +8,40 @@ import com.apipas.easyflow.android.err.ExecutionError;
 import java.util.HashMap;
 import java.util.Map;
 
-public class State<C extends StatefulContext> {
+@SuppressWarnings({"UnusedReturnValue", "unused"})
+public class State {
     private static final String TAG = State.class.getSimpleName();
-    private static long idCounter = 1;
 
     private boolean isFinal = false;
-    private EasyFlow<C> runner;
+    private EasyFlow runner;
     private String id;
-    private Map<Event<C>, State<C>> transitions = new HashMap<Event<C>, State<C>>();
-    private StateHandler<C> onEnterHandler;
-    private StateHandler<C> onLeaveHandler;
+    private Map<Event, State> transitions = new HashMap<>();
+    private StateHandler onEnterHandler;
+    private StateHandler onLeaveHandler;
 
-    public State() {
-        this.id = "State_" + (idCounter++);
-    }
-
-    public State(String id) {
+    State(String id) {
         this.id = id;
     }
 
-    public State<C> whenEnter(StateHandler<C> onEnterListener) {
+    public State whenEnter(StateHandler onEnterListener) {
         this.onEnterHandler = onEnterListener;
         return this;
     }
 
-    public State<C> whenLeave(StateHandler<C> onLeaveListener) {
+    public String getId() {
+        return id;
+    }
+
+    public State whenLeave(StateHandler onLeaveListener) {
         this.onLeaveHandler = onLeaveListener;
         return this;
     }
 
-    public boolean hasEvent(Event<C> event) {
+    public boolean hasEvent(Event event) {
         return transitions.containsKey(event);
     }
 
-    public boolean hasTransitionTo(State<C> state) {
+    public boolean hasTransitionTo(State state) {
         return transitions.containsValue(state);
     }
 
@@ -50,12 +50,13 @@ public class State<C extends StatefulContext> {
         return id;
     }
 
-    protected void addEvent(Event<C> event, State<C> stateTo) {
-//		log.debug("add transition: {} --- {} --> {}", id, event, stateTo);
+    protected void addEvent(Event event, State stateTo) {
+        if (BuildConfig.DEBUG)
+            Log.d("Tag", "add transition: {" + id + "} --- {" + event + "} --> {" + stateTo + "}");
         transitions.put(event, stateTo);
     }
 
-    protected void enter(final C context) {
+    protected void enter(final FlowContext context) {
         if (context.isTerminated()) {
             return;
         }
@@ -65,12 +66,12 @@ public class State<C extends StatefulContext> {
             runner.callOnStateEnter(State.this, context);
 
             if (onEnterHandler != null) {
-                if (runner.isTrace())
+                if (BuildConfig.DEBUG)
                     Log.d(TAG, String.format("when enter %s for %s <<<", State.this, context));
 
                 onEnterHandler.call(State.this, context);
 
-                if (runner.isTrace())
+                if (BuildConfig.DEBUG)
                     Log.d(TAG, String.format("when enter %s for %s >>>", State.this, context));
             }
 
@@ -78,12 +79,12 @@ public class State<C extends StatefulContext> {
                 runner.callOnFinalState(State.this, context);
             }
         } catch (Exception e) {
-            runner.callOnError(new ExecutionError(State.this, null, e,
-                    "Execution Error in [State.whenEnter] handler", context));
+            runner.callOnError(new ExecutionError(State.this, null, e, "Execution Error in [State.whenEnter] handler"
+                    , context));
         }
     }
 
-    protected void leave(final C context) {
+    protected void leave(final FlowContext context) {
         if (context.isTerminated()) {
             return;
         }
@@ -91,22 +92,22 @@ public class State<C extends StatefulContext> {
         // then leave the state
         if (onLeaveHandler != null) {
             try {
-                if (runner.isTrace())
+                if (BuildConfig.DEBUG)
                     Log.d(TAG, String.format("when leave %s for %s <<<", State.this, context));
 
                 onLeaveHandler.call(State.this, context);
 
-                if (runner.isTrace())
+                if (BuildConfig.DEBUG)
                     Log.d(TAG, String.format("when leave %s for %s >>>", State.this, context));
             } catch (Exception e) {
-                runner.callOnError(new ExecutionError(State.this, null, e,
-                        "Execution Error in [State.whenEnter] handler", context));
+                runner.callOnError(new ExecutionError(State.this, null, e, "Execution Error in [State.whenEnter] " +
+                        "handler", context));
             }
         }
         runner.callOnStateLeave(this, context);
     }
 
-    protected Map<Event<C>, State<C>> getTransitions() {
+    protected Map<Event, State> getTransitions() {
         return transitions;
     }
 
@@ -118,14 +119,14 @@ public class State<C extends StatefulContext> {
         this.isFinal = isFinal;
     }
 
-    protected void setFlowRunner(EasyFlow<C> runner) {
+    protected void setFlowRunner(EasyFlow runner) {
         this.runner = runner;
 
-        for (Event<C> event : transitions.keySet()) {
+        for (Event event : transitions.keySet()) {
             event.setFlowRunner(runner);
         }
 
-        for (State<C> nextState : transitions.values()) {
+        for (State nextState : transitions.values()) {
             if (nextState.runner == null) {
                 nextState.setFlowRunner(runner);
             }
@@ -140,7 +141,6 @@ public class State<C extends StatefulContext> {
         return result;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -149,12 +149,10 @@ public class State<C extends StatefulContext> {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        State<C> other = (State<C>) obj;
+        State other = (State) obj;
         if (id == null) {
-            if (other.id != null)
-                return false;
-        } else if (!id.equals(other.id))
-            return false;
-        return true;
+            return other.id == null;
+        } else
+            return id.equals(other.id);
     }
 }
