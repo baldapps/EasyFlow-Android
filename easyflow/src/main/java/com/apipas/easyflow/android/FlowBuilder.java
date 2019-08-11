@@ -5,17 +5,22 @@ import com.apipas.easyflow.android.err.DefinitionError;
 import java.util.HashSet;
 import java.util.Set;
 
+import androidx.annotation.NonNull;
+
+@SuppressWarnings("unused")
 public class FlowBuilder {
     private State startState;
     private EasyFlow result;
+    private String tag;
     private static Set<String> states = new HashSet<>();
 
-    protected FlowBuilder(State startState) {
+    protected FlowBuilder(State startState, @NonNull String tag) {
         this.startState = startState;
+        this.tag = tag;
     }
 
-    public static FlowBuilder from(State startState) {
-        return new FlowBuilder(startState);
+    public static FlowBuilder from(State startState, @NonNull String tag) {
+        return new FlowBuilder(startState, tag);
     }
 
     public FlowBuilder transit(TransitionBuilder... transitions) {
@@ -29,6 +34,7 @@ public class FlowBuilder {
 
     public EasyFlow build() {
         states.clear();
+        result.setTag(tag);
         return result;
     }
 

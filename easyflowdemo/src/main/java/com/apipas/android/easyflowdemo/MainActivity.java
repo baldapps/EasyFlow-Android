@@ -113,20 +113,6 @@ public class MainActivity extends Activity {
 
     private EasyFlow flow;
 
-    //NOTE: CALL THIS METHOD TO RECONFIGURE!!
-    @Override
-    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-        flow.onRestoreInstanceState(savedInstanceState);
-    }
-
-    //NOTE: CALL THIS METHOD TO RECONFIGURE!!
-    @Override
-    protected void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        flow.onSaveInstanceState(outState);
-    }
-
     private void initFlow() {
         if (flow != null) {
             return;
@@ -134,7 +120,7 @@ public class MainActivity extends Activity {
 
         // building our FSM
         flow = FlowBuilder
-                .from(SHOWING_WELCOME).transit(
+                .from(SHOWING_WELCOME, "myflow").transit(
                         onCardPresent.to(WAITING_FOR_PIN).transit(
                                 onPinProvided.to(CHECKING_PIN).transit(
                                         onPinValid.to(SHOWING_MAIN_MENU).transit(
@@ -369,6 +355,18 @@ public class MainActivity extends Activity {
         initFlow();
         bindFlow();
 
-        flow.start(new MyContext());
+        if (savedInstanceState != null) {
+            flow.onRestoreInstanceState(savedInstanceState);
+            flow.start();
+        } else {
+            flow.start(new MyContext());
+        }
+    }
+    
+    //NOTE: CALL THIS METHOD TO RECONFIGURE!!
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        flow.onSaveInstanceState(outState);
     }
 }

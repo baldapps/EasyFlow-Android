@@ -24,6 +24,7 @@ public class EasyFlow {
     private FlowContext context;
     private Executor executor;
     private boolean validated;
+    private String tag;
 
     private StateHandler onStateEnterHandler;
     private StateHandler onStateLeaveHandler;
@@ -39,6 +40,10 @@ public class EasyFlow {
         for (TransitionBuilder transition : transitions) {
             startState.addEvent(transition.getEvent(), transition.getStateTo());
         }
+    }
+
+    protected void setTag(@NonNull String tag) {
+        this.tag = tag;
     }
 
     private void prepare() {
@@ -102,7 +107,7 @@ public class EasyFlow {
     }
 
     public void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
-        context = savedInstanceState.getParcelable(KEY_CONTEXT);
+        context = savedInstanceState.getParcelable(KEY_CONTEXT + tag);
         if (context != null) {
             StateFinder stateFinder = new StateFinder(startState, context.getStateId());
             State s = stateFinder.find();
@@ -111,7 +116,7 @@ public class EasyFlow {
     }
 
     public void onSaveInstanceState(@NonNull Bundle outState) {
-        outState.putParcelable(KEY_CONTEXT, context);
+        outState.putParcelable(KEY_CONTEXT + tag, context);
     }
 
     protected void execute(Runnable task) {

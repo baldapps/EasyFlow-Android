@@ -35,7 +35,7 @@ With **EasyFlow** we can define the above state machine like this
 
 ```java
 EasyFlow flow = FlowBuilder
-    .from(SHOWING_WELCOME).transit(
+    .from(SHOWING_WELCOME, "myflow").transit(
         onCardPresent.to(WAITING_FOR_PIN).transit(
             onPinProvided.to(...).transit(
                 ...
