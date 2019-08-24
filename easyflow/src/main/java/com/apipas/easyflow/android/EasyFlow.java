@@ -71,10 +71,10 @@ public class EasyFlow {
 
     public void start() throws DefinitionError {
         validate();
-        if (this.context == null)
+        if (this.context == null || context.getState().isFinal())
             this.context = new FlowContext();
 
-        if (context.getState() == null) {
+        if (context.getState() == null || context.getState().isFinal()) {
             setCurrentState(startState, context);
         }
     }
@@ -83,7 +83,7 @@ public class EasyFlow {
         validate();
         this.context = context;
 
-        if (context.getState() == null) {
+        if (context.getState() == null || context.getState().isFinal()) {
             setCurrentState(startState, context);
         }
     }
