@@ -1,5 +1,6 @@
 package com.apipas.easyflow.android;
 
+
 import android.util.Log;
 
 import com.apipas.easyflow.android.call.EventHandler;
@@ -9,6 +10,8 @@ import com.apipas.easyflow.android.err.LogicViolationError;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import androidx.annotation.NonNull;
 
 @SuppressWarnings("unused")
 public class Event {
@@ -44,14 +47,18 @@ public class Event {
     }
 
     public void trigger(final FlowContext context) {
+        if (context == null)
+            return;
 
         try {
             if (null == runner) {
-                throw new LogicViolationError("Invalid Event: " + Event.this.toString() +
-                        " triggered while in State: " + context.getState() + " for " + context);
+                throw new LogicViolationError("Invalid Event: " + Event.this.toString() + " " +
+                        "triggered while in State: " + context
+                        .getState() + " for " + context);
             }
         } catch (LogicViolationError logicViolationError) {
-            Log.e(TAG, String.format("Event has no State to map to. You must define event %s transition in map Flow!", this), logicViolationError);
+            Log.e(TAG, String.format("Event has no State to map to. You must define event %s " +
+                    "transition in map Flow!", this), logicViolationError);
             return;
         }
 
@@ -69,16 +76,17 @@ public class Event {
 
             try {
                 if (stateTo == null) {
-                    throw new LogicViolationError("Invalid Event: " + Event.this.toString() +
-                            " triggered while in State: " + context.getState() + " for " + context);
+                    throw new LogicViolationError("Invalid Event: " + Event.this.toString() + " " +
+                            "triggered while in State: " + context
+                            .getState() + " for " + context);
                 } else {
                     callOnTriggered(context, stateFrom, stateTo);
                     runner.callOnEventTriggered(Event.this, stateFrom, stateTo, context);
                     runner.setCurrentState(stateTo, context);
                 }
             } catch (Exception e) {
-                runner.callOnError(new ExecutionError(stateFrom, Event.this, e,
-                        "Execution Error in [Event.trigger]", context));
+                runner.callOnError(new ExecutionError(stateFrom, Event.this, e, "Execution Error " +
+                        "in [Event.trigger]", context));
             }
         });
     }
@@ -87,10 +95,11 @@ public class Event {
         State existingTransitionState = transitions.get(from);
         if (existingTransitionState != null) {
             if (existingTransitionState == to) {
-                throw new DefinitionError("Duplicate transition[" + this + "] from " + from + " to " + to);
+                throw new DefinitionError("Duplicate transition[" + this + "] from " + from + " " +
+                        "to " + to);
             } else {
-                throw new DefinitionError("Ambiguous transition[" + this + "] from " + from + " to " + to + " and " +
-                        existingTransitionState);
+                throw new DefinitionError("Ambiguous transition[" + this + "] from " + from + " " +
+                        "to " + to + " and " + existingTransitionState);
 
             }
         }
@@ -108,6 +117,7 @@ public class Event {
         }
     }
 
+    @NonNull
     @Override
     public String toString() {
         return id;
