@@ -25,6 +25,9 @@ public class StateFinder {
             // haven't started with this state yet
             states.add(state);
 
+            if (state.getId().equals(id))
+                return state;
+
             for (Map.Entry<Event, State> e : state.getTransitions().entrySet()) {
                 State stateTo = e.getValue();
                 if (stateTo.getId().equals(id))
